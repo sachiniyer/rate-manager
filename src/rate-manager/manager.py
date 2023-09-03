@@ -67,18 +67,19 @@ class Rate:
         """
         self.times.append(time)
 
-    def get_time(self, time):
+    def get_wait_time(self, times):
         """
-        Get time.
+        Get wait time.
 
-        Gets the time from the list of times.
+        Gets the wait time for the next time.
         """
-        for item in self.times:
-            if item.time == time:
-                return item
-        return None
+        current_time = time.time()
+        self.sync_times(times)
+        if len(self.times) > 0:
+            return self.times[0].time - current_time + self.interval
+        return -1
 
-    def sync_times(self):
+    def sync_times(self, times):
         """
         Sync times.
 
@@ -88,6 +89,8 @@ class Rate:
         for item in self.times:
             if item.time < current_time:
                 item.remove_active()
+                if times[item.time].active == 0:
+                    times.remove(item.time)
                 self.times.remove(item)
             else:
                 break
@@ -154,4 +157,27 @@ class Manager:
                 rate.times.append(self.times[newtime])
                 self.times[newtime].add_active()
         for rate in self.rates:
-            rate.sync_times()
+            rate.sync_times(self.times)
+
+    def sync_file(self):
+        """
+        Sync file.
+
+        Syncs the file with the current state of the program.
+        """
+        with open(self.file, "w") as f:
+            f.write(json.dumps(self.rates))
+
+    def check_time(self):
+        """
+        Check time.
+
+        Checks the current time and updates the rates.
+        """
+        wait_time = -1
+        for r in self.rates:
+            wait_time = max(r.get_wait_time(self.times), wait_time)
+        self.sync_file()
+        if wait_time < 0:
+            return 0
+        return wait_time
