@@ -1,1 +1,7 @@
-#!/usr/bin/env python3
+"""
+Init file.
+
+Main file for rate-manager package
+"""
+
+from .manager import Manager
