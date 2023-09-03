@@ -1,2 +1,4 @@
 /dist
 rate_manager.egg-info
+/log.txt
+__pycache__

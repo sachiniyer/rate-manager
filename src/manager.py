@@ -55,7 +55,7 @@ class Rate:
 
         Defines the rate and the times.
         """
-        self.inteval = interval
+        self.interval = interval
         self.amount = amount
         self.times = []
 
@@ -89,7 +89,7 @@ class Rate:
         for item in self.times:
             if item.time < current_time:
                 item.remove_active()
-                if times[item.time].active == 0:
+                if times[item.time].active <= 0:
                     times.remove(item.time)
                 self.times.remove(item)
             else:
@@ -109,11 +109,13 @@ class Manager:
 
         Defines the rates, and optionally reads from files.
         """
-        self.check_rates(rates)
         self.rates = []
         self.times = {}
+        self.file = file
+        self.check_rates(rates)
+        self.parse_rates(rates, file)
 
-    def check_rates(rates):
+    def check_rates(self, rates):
         """
         Check rates.
 
@@ -122,10 +124,10 @@ class Manager:
         if not isinstance(rates, dict):
             raise TypeError("Rates is not a dictionary")
         for key, value in rates.items():
-            if (not all(isinstance(key, int),
+            if (not all((isinstance(key, int),
                         isinstance(value, int),
                         key > 0,
-                        value > 0)):
+                        value > 0))):
                 raise ValueError("Rates and Times must be positive integer"
                                  f"values: {key}: {value}")
 
@@ -151,13 +153,14 @@ class Manager:
             else:
                 self.rates.append(Rate(key, value))
 
-        sorted_times = self.times.keys().sort()
+        sorted_times = sorted(self.times.keys())
         for newtime in sorted_times:
             for rate in self.rates:
                 rate.times.append(self.times[newtime])
                 self.times[newtime].add_active()
         for rate in self.rates:
             rate.sync_times(self.times)
+        self.sync_file()
 
     def sync_file(self):
         """
@@ -165,8 +168,17 @@ class Manager:
 
         Syncs the file with the current state of the program.
         """
+        dump_obj = []
+
+        for r in self.rates:
+            times = []
+            for t in r.times:
+                times.append(t.time)
+            dump_obj.append({"interval": r.interval,
+                             "amount": r.amount,
+                             "times": times})
         with open(self.file, "w") as f:
-            f.write(json.dumps(self.rates))
+            f.write(json.dumps(dump_obj))
 
     def check_time(self):
         """

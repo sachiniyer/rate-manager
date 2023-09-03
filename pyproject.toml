@@ -1,5 +1,5 @@
 [project]
-name = "rate-manager"
+name = "rate_manager"
 version = "0.0.1"
 authors = [
   { name="Sachin Iyer", email="sachinjiyer@gmail.com" },
