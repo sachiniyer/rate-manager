@@ -59,13 +59,14 @@ class Rate:
         self.amount = amount
         self.times = []
 
-    def add_time(self, time):
+    def add_time(self, time, times):
         """
         Add time.
 
         Adds a time to the list of times.
         """
-        self.times.append(time)
+        self.times.append(times[time])
+        times[time].add_active()
 
     def get_wait_time(self, times):
         """
@@ -75,9 +76,11 @@ class Rate:
         """
         current_time = time.time()
         self.sync_times(times)
+        if len(self.times) >= self.amount:
+            return self.times[-self.amount].time - current_time + self.interval
         if len(self.times) > 0:
-            return self.times[0].time - current_time + self.interval
-        return -1
+            return self.times[0].time - current_time - self.interval
+        return 0
 
     def sync_times(self, times):
         """
@@ -87,10 +90,10 @@ class Rate:
         """
         current_time = time.time()
         for item in self.times:
-            if item.time < current_time:
+            if item.time + self.interval < current_time:
                 item.remove_active()
                 if times[item.time].active <= 0:
-                    times.remove(item.time)
+                    times.pop(item.time)
                 self.times.remove(item)
             else:
                 break
@@ -174,9 +177,9 @@ class Manager:
             times = []
             for t in r.times:
                 times.append(t.time)
-            dump_obj.append({"interval": r.interval,
-                             "amount": r.amount,
-                             "times": times})
+            dump_obj.append({r.interval:
+                             {"amount": r.amount,
+                              "times": times}})
         with open(self.file, "w") as f:
             f.write(json.dumps(dump_obj))
 
@@ -189,7 +192,11 @@ class Manager:
         wait_time = -1
         for r in self.rates:
             wait_time = max(r.get_wait_time(self.times), wait_time)
-        self.sync_file()
-        if wait_time < 0:
+        if wait_time <= 0:
+            current_time = time.time()
+            self.times[current_time] = Time(current_time)
+            for r in self.rates:
+                r.add_time(current_time, self.times)
             return 0
+        self.sync_file()
         return wait_time
