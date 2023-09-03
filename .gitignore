@@ -2,3 +2,4 @@
 rate_manager.egg-info
 /log.txt
 __pycache__
+/tests/logs/temp

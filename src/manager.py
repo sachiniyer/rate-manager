@@ -68,6 +68,17 @@ class Rate:
         self.times.append(times[time])
         times[time].add_active()
 
+    def delete_time(self, time, times):
+        """
+        Delete time.
+
+        Deletes a time from the list of times.
+        """
+        self.times.remove(times[time])
+        times[time].remove_active()
+        if times[time].active <= 0:
+            times.pop(time)
+
     def get_wait_time(self, times):
         """
         Get wait time.
@@ -76,7 +87,7 @@ class Rate:
         """
         current_time = time.time()
         self.sync_times(times)
-        if len(self.times) >= self.amount:
+        if len(self.times) == self.amount:
             return self.times[-self.amount].time - current_time + self.interval
         if len(self.times) > 0:
             return self.times[0].time - current_time - self.interval
@@ -89,12 +100,13 @@ class Rate:
         Syncs the times with the current time.
         """
         current_time = time.time()
+        if len(self.times) > self.amount:
+            while len(self.times) > self.amount:
+                self.delete_time(self.times[0].time, times)
+
         for item in self.times:
             if item.time + self.interval < current_time:
-                item.remove_active()
-                if times[item.time].active <= 0:
-                    times.pop(item.time)
-                self.times.remove(item)
+                self.delete_time(item.time, times)
             else:
                 break
 
@@ -106,7 +118,7 @@ class Manager:
     Contains all the high level methods for the Manager.
     """
 
-    def __init__(self, rates, file="log.txt"):
+    def __init__(self, rates, file="log.txt", load="log.txt"):
         """
         Init function.
 
@@ -116,7 +128,7 @@ class Manager:
         self.times = {}
         self.file = file
         self.check_rates(rates)
-        self.parse_rates(rates, file)
+        self.parse_rates(rates, load)
 
     def check_rates(self, rates):
         """
@@ -134,11 +146,11 @@ class Manager:
                 raise ValueError("Rates and Times must be positive integer"
                                  f"values: {key}: {value}")
 
-    def parse_rates(self, rates, file):
+    def load_log(self, file):
         """
-        Parse rates.
+        Load log.
 
-        Parses the rates into a queue.
+        Loads the log file.
         """
         contents = []
         if os.path.exists(file):
@@ -146,16 +158,36 @@ class Manager:
                 contents = f.read()
                 contents = json.loads(contents)
 
+        contents_map = {}
+        for item in contents:
+            for key, value in item.items():
+                new_key = f"{key} {value['amount']}"
+                contents_map[new_key] = value["times"]
+        return contents_map
+
+    def load_rates_times(self, rates, contents_map):
+        """
+        Load rates times.
+
+        Loads the rates and times.
+        """
         for key, value in rates.items():
-            if key in contents:
+            content_key = f"{key} {value}"
+            if content_key in contents_map:
                 add_rate = Rate(key, value)
-                for newtime in contents[key].times:
+                for newtime in contents_map[content_key]:
                     if newtime not in self.times:
                         self.times[newtime] = Time(newtime)
                 self.rates.append(add_rate)
             else:
                 self.rates.append(Rate(key, value))
 
+    def fix_times(self):
+        """
+        Fix times.
+
+        Fixes the times.
+        """
         sorted_times = sorted(self.times.keys())
         for newtime in sorted_times:
             for rate in self.rates:
@@ -163,6 +195,16 @@ class Manager:
                 self.times[newtime].add_active()
         for rate in self.rates:
             rate.sync_times(self.times)
+
+    def parse_rates(self, rates, file):
+        """
+        Parse rates.
+
+        Parses the rates into a queue.
+        """
+        contents_map = self.load_log(file)
+        self.load_rates_times(rates, contents_map)
+        self.fix_times()
         self.sync_file()
 
     def sync_file(self):

@@ -11,8 +11,7 @@ class TestManager(unittest.TestCase):
     Contains all the tests for the manager class.
     """
     @classmethod
-    def setUpClass():
-        # delete all files in tests/logs/temp
+    def setUpClass(self):
         for file in os.listdir("tests/logs/temp"):
             os.remove("tests/logs/temp/" + file)
 
@@ -47,3 +46,38 @@ class TestManager(unittest.TestCase):
         self.assertEqual(manager.check_time(), 0, "First check")
         mock_time.return_value = 11.1
         self.assertEqual(manager.check_time(), 0, "Second check")
+
+    @patch('time.time')
+    def test_wait(self, mock_time):
+        mock_time.return_value = 10.0
+        manager = Manager({2: 1}, "tests/logs/temp/log_wait.txt")
+        self.assertEqual(manager.check_time(), 0, "First check")
+        mock_time.return_value = 11.0
+        self.assertEqual(manager.check_time(), 1, "Second check")
+
+    @patch('time.time')
+    def test_load(self, mock_time):
+        mock_time.return_value = 10.1
+        manager = Manager({1: 1},
+                          "tests/logs/temp/log_load.txt",
+                          "tests/logs/persist/log_load.txt")
+        self.assertEqual(len(manager.rates), 1)
+        self.assertEqual(len(manager.times), 1)
+
+    @patch('time.time')
+    def test_loadsync(self, mock_time):
+        mock_time.return_value = 13.0
+        manager = Manager({2: 2},
+                          "tests/logs/temp/log_loadsync.txt",
+                          "tests/logs/persist/log_loadsync.txt")
+        self.assertEqual(len(manager.rates), 1)
+        self.assertEqual(len(manager.times), 2)
+
+    @patch('time.time')
+    def test_loadexcess(self, mock_time):
+        mock_time.return_value = 13.0
+        manager = Manager({2: 2},
+                          "tests/logs/temp/log_loadexcess.txt",
+                          "tests/logs/persist/log_loadexcess.txt")
+        self.assertEqual(len(manager.rates), 1)
+        self.assertEqual(len(manager.times), 2)
