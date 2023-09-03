@@ -1,7 +1,5 @@
 # rate-manager
 
-_In Progress_
-
 This is a quick and dirty python package to help you manage rate limits for an api.
 
 ## Example
