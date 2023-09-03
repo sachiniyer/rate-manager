@@ -12,6 +12,9 @@ class TestManager(unittest.TestCase):
     """
     @classmethod
     def setUpClass(self):
+        # create temp folder if it does not exist
+        if not os.path.exists("tests/logs/temp"):
+            os.makedirs("tests/logs/temp")
         for file in os.listdir("tests/logs/temp"):
             os.remove("tests/logs/temp/" + file)
 
