@@ -4,4 +4,4 @@ Init file.
 Main file for rate-manager package
 """
 
-from .manager import Manager
+from .manager import Manager  # noqa F401
