@@ -1,0 +1,8 @@
+README.md
+pyproject.toml
+src/rate-manager/__init__.py
+src/rate-manager/manager.py
+src/rate_manager.egg-info/PKG-INFO
+src/rate_manager.egg-info/SOURCES.txt
+src/rate_manager.egg-info/dependency_links.txt
+src/rate_manager.egg-info/top_level.txt
